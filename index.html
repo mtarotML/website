@@ -1,10 +1,349 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
-    <title>Rougaille</title>
-  </head>
-  <body>
-    <h1>Alors hippo, on se met au rougaille ????</h1>
-  </body>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Little Doodle Board</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .canvas-container {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        canvas {
+            border: 2px solid #333;
+            cursor: crosshair;
+            display: block;
+            touch-action: none; /* Prevents scrolling while drawing on mobile */
+            border-radius: 4px;
+        }
+
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            color: white;
+            background-color: #333;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #555;
+            transform: translateY(-1px);
+        }
+        
+        button:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #fallBtn {
+            background-color: #007bff;
+        }
+        #fallBtn.reset-mode {
+            background-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Tableau de Gribouillage (Doodle Board)</h1>
+
+    <div class="canvas-container">
+        <!-- Tableau 250x250 pour dessiner -->
+        <canvas id="drawingBoard" width="250" height="250"></canvas>
+    </div>
+
+    <div class="controls">
+        <button id="clearBtn">Effacer le Tableau</button>
+        <button id="fallBtn">Chute</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('drawingBoard');
+            const ctx = canvas.getContext('2d');
+            const clearBtn = document.getElementById('clearBtn');
+            const fallBtn = document.getElementById('fallBtn');
+            
+            let isDrawing = false;
+            let lastX = 0;
+            let lastY = 0;
+
+            // Physics and Animation State
+            let particles = [];
+            let isFalling = false;
+            let animationFrameId = null;
+            
+            // Physics Constants
+            const BLOCK_SIZE = 5; // Size of the blocks for falling
+            const GRAVITY = 0.5; // Vertical acceleration
+            const BOUNCE_FACTOR = 0.7; // How much bounce
+            const FRICTION = 0.99; // Air resistance / horizontal friction
+
+            // Drawing Settings
+            ctx.strokeStyle = '#000000'; // Black color
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.lineWidth = 3;
+
+            // --- Drawing Functions ---
+            function startDrawing(e) {
+                if (isFalling) return; // Cannot draw while physics simulation is active
+                isDrawing = true;
+                [lastX, lastY] = getCoordinates(e);
+            }
+
+            function draw(e) {
+                if (!isDrawing || isFalling) return;
+                
+                // Prevent scrolling on touch devices
+                if(e.type.includes('touch')) {
+                    e.preventDefault();
+                }
+
+                const [currentX, currentY] = getCoordinates(e);
+
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(currentX, currentY);
+                ctx.stroke();
+
+                [lastX, lastY] = [currentX, currentY];
+            }
+
+            function stopDrawing() {
+                isDrawing = false;
+                ctx.beginPath(); // Reset path to prevent lines connecting when restarting
+            }
+
+            // Helper to get coordinates for both Mouse and Touch events
+            function getCoordinates(e) {
+                const rect = canvas.getBoundingClientRect();
+                let clientX, clientY;
+
+                if (e.type.includes('touch')) {
+                    // Use the first touch point
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    // Use mouse coordinates
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+
+                return [
+                    clientX - rect.left,
+                    clientY - rect.top
+                ];
+            }
+
+            // --- Physics Functions ---
+
+            function generateParticles() {
+                // 1. Get the raw pixel data from the canvas
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                particles = [];
+
+                // 2. Iterate through the canvas in blocks of BLOCK_SIZE
+                for (let y = 0; y < canvas.height; y += BLOCK_SIZE) {
+                    for (let x = 0; x < canvas.width; x += BLOCK_SIZE) {
+                        
+                        // Check the alpha channel of the top-left pixel of the block
+                        // Index calculation: (y * width + x) * 4 (since each pixel has R, G, B, A)
+                        const index = (y * canvas.width + x) * 4;
+                        const alpha = data[index + 3];
+
+                        // If the block is not completely empty (alpha > 0)
+                        if (alpha > 0) {
+                            particles.push({
+                                x: x,
+                                y: y,
+                                // Add a small random horizontal velocity for a "scatter" effect
+                                vx: (Math.random() - 0.5) * 2, 
+                                vy: 0, // vertical velocity starts at 0
+                                // Get the color data (it should be black: 0, 0, 0, 255)
+                                color: `rgba(${data[index]}, ${data[index+1]}, ${data[index+2]}, ${data[index+3] / 255})`,
+                            });
+                        }
+                    }
+                }
+                // Clear the original canvas to make the particles appear to "lift off"
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+
+            function updatePhysics() {
+                let allStopped = true;
+
+                particles.forEach(p => {
+                    // Check if particle is still moving or above the floor
+                    if (p.y + BLOCK_SIZE < canvas.height || Math.abs(p.vy) > 0.01) {
+                        allStopped = false; // At least one particle is still moving
+
+                        // Apply gravity
+                        p.vy += GRAVITY;
+
+                        // Apply friction (air resistance) to horizontal movement
+                        p.vx *= FRICTION;
+
+                        // Update position
+                        p.x += p.vx;
+                        p.y += p.vy;
+
+                        // Floor collision check
+                        if (p.y + BLOCK_SIZE > canvas.height) {
+                            p.y = canvas.height - BLOCK_SIZE; // Set position to floor
+                            p.vy *= -BOUNCE_FACTOR; // Bounce
+                            p.vx *= 0.9; // Horizontal friction on floor contact
+
+                            // Stop small bounces to prevent jittering
+                            if (Math.abs(p.vy) < 1.0) {
+                                p.vy = 0;
+                            }
+                        }
+
+                        // Wall collision check
+                        if (p.x < 0 || p.x + BLOCK_SIZE > canvas.width) {
+                            p.vx *= -0.8; // Bounce off walls
+                            // Correct position to prevent sticking
+                            if (p.x < 0) p.x = 0;
+                            if (p.x + BLOCK_SIZE > canvas.width) p.x = canvas.width - BLOCK_SIZE;
+                        }
+                    } else {
+                        // Particle has settled on the floor
+                        p.vy = 0;
+                        p.vx = 0;
+                    }
+                });
+
+                if (allStopped && animationFrameId !== null) {
+                    // All particles have settled, stop the animation loop
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                    isFalling = false;
+                    
+                    // Transition to Reset state
+                    fallBtn.textContent = "Réinitialiser";
+                    fallBtn.classList.add('reset-mode');
+                    fallBtn.disabled = false;
+                    clearBtn.disabled = false;
+                }
+            }
+
+            function render() {
+                // Clear the canvas for the new particle positions
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                particles.forEach(p => {
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, BLOCK_SIZE, BLOCK_SIZE);
+                });
+            }
+
+            function gameLoop() {
+                updatePhysics();
+                render();
+                if (isFalling) {
+                    animationFrameId = requestAnimationFrame(gameLoop);
+                }
+            }
+
+            function handleFallButton() {
+                // If in Reset Mode, clear everything and return to Drawing Mode
+                if (fallBtn.classList.contains('reset-mode')) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    particles = [];
+                    fallBtn.textContent = "Chute";
+                    fallBtn.classList.remove('reset-mode');
+                    return;
+                }
+
+                // Only start falling if not already falling and no particles exist
+                if (particles.length === 0 && !isFalling) {
+                    // 1. Generate particles from the current drawing
+                    generateParticles();
+
+                    if (particles.length > 0) {
+                        // 2. Start the simulation
+                        isFalling = true;
+                        fallBtn.textContent = "Chute en cours...";
+                        fallBtn.disabled = true; 
+                        clearBtn.disabled = true; // Disable clear button during fall
+                        gameLoop();
+                    } else {
+                        // 3. Handle case where canvas is empty
+                        fallBtn.textContent = "Rien à faire tomber !";
+                        fallBtn.disabled = true;
+                        setTimeout(() => {
+                            fallBtn.textContent = "Chute";
+                            fallBtn.disabled = false;
+                        }, 1200);
+                    }
+                }
+            }
+
+            // --- Event Listeners ---
+
+            // Mouse Events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            // Touch Events (for mobile/tablet)
+            canvas.addEventListener('touchstart', startDrawing);
+            canvas.addEventListener('touchmove', draw);
+            canvas.addEventListener('touchend', stopDrawing);
+
+            // Clear Button
+            clearBtn.addEventListener('click', () => {
+                // Only clear if not in falling state or reset state
+                if (!isFalling && !fallBtn.classList.contains('reset-mode')) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    particles = []; // Ensure particles array is empty
+                } else if (fallBtn.classList.contains('reset-mode')) {
+                    // If in reset mode, the clear button acts like a reset
+                    handleFallButton(); 
+                }
+            });
+
+            // Fall Button
+            fallBtn.addEventListener('click', handleFallButton);
+        });
+    </script>
+</body>
 </html>
