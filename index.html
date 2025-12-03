@@ -1,10 +1,144 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
-    <title>Rougaille</title>
-  </head>
-  <body>
-    <h1>Alors hippo, on se met au rougaille ????</h1>
-  </body>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Interface</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #0F0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            margin: 0;
+            padding: 20px;
+            overflow-y: scroll;
+            height: 100vh;
+            box-sizing: border-box;
+            line-height: 1.4;
+        }
+
+        .line {
+            white-space: pre-wrap;
+        }
+
+        .prompt {
+            display: inline;
+        }
+
+        #input-area {
+            display: flex;
+            align-items: center;
+        }
+
+        #command-input {
+            background: none;
+            border: none;
+            color: #0F0;
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
+            flex-grow: 1;
+            padding: 0;
+            margin: 0;
+            caret-color: transparent;
+        }
+
+        .cursor {
+            background-color: #0F0;
+            width: 8px;
+            height: 1em;
+            display: inline-block;
+            margin-left: 2px;
+            vertical-align: middle;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            from, to { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="output">
+        <div class="line">INITIALIZING SYSTEM... [OK]</div>
+        <div class="line">READY. TYPE 'HELP' FOR ASSISTANCE.</div>
+        <div class="line"><br></div>
+    </div>
+
+    <div id="input-area">
+        <span class="prompt">></span>
+        <input type="text" id="command-input" autofocus>
+        <span class="cursor"></span>
+    </div>
+
+    <script>
+        const outputDiv = document.getElementById('output');
+        const inputField = document.getElementById('command-input');
+        const promptText = document.querySelector('.prompt').textContent;
+
+        const ENCRYPTED_COMMAND = 'bWFydGlubGVib3Nz';
+        const ENCRYPTED_RESPONSE = 'bGVzX3Rlcm1lcw==';
+
+        function decodeBase64(encodedString) {
+            try {
+                return window.atob(encodedString);
+            } catch (e) {
+                return "";
+            }
+        }
+
+        const SECRET_COMMAND = decodeBase64(ENCRYPTED_COMMAND);
+        const SECRET_RESPONSE = decodeBase64(ENCRYPTED_RESPONSE);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            inputField.focus();
+        });
+        document.addEventListener('click', () => {
+            inputField.focus();
+        });
+
+        inputField.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                processCommand();
+            }
+        });
+
+        function processCommand() {
+            const command = inputField.value.trim();
+
+            const commandLine = document.createElement('div');
+            commandLine.classList.add('line');
+            commandLine.innerHTML = `${promptText} ${command}`;
+            outputDiv.appendChild(commandLine);
+
+            let response;
+            if (command === SECRET_COMMAND) {
+                response = SECRET_RESPONSE;
+            } else if (command === '') {
+                response = '';
+            } else {
+                response = `COMMAND: ${command} -> ERROR: UNRECOGNIZED INPUT SEQUENCE. (0xAE)`;
+            }
+
+            if (response) {
+                const responseLine = document.createElement('div');
+                responseLine.classList.add('line');
+                responseLine.textContent = response;
+                outputDiv.appendChild(responseLine);
+            }
+
+            const spacerLine = document.createElement('div');
+            spacerLine.classList.add('line');
+            spacerLine.innerHTML = '<br>';
+            outputDiv.appendChild(spacerLine);
+
+            inputField.value = '';
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+    </script>
+</body>
 </html>
