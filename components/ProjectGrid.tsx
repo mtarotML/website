@@ -6,7 +6,7 @@ const projects = [
     description:
       "Concours de dessin en ligne.\n\nstack : Oracle VM, Git, Docker Compose, Nginx, PostgreSQL, FastAPI.",
     accentColor: "#7AD98D",
-    href: "martin-dessin",
+    href: "https://martintarot.com/martin-dessin",
   },
   {
     title: "FASHION MNIST",
