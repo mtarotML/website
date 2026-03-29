@@ -74,10 +74,6 @@ jobs:
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
       - name: Build with Next.js
-        env:
-          # Must match the repo name (site URL: https://<user>.github.io/<repo>/).
-          # configure-pages only injects into next.config.{js,mjs,cjs}, not next.config.ts.
-          NEXT_PUBLIC_BASE_PATH: /website
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
