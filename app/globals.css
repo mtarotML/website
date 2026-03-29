@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #ffffff;
+  --color-foreground: #000000;
+  --color-card-title: #e8e8e8;
+  --color-accent-green: #7ad98d;
+  --color-accent-cyan: #7ad3d9;
+
+  --font-sans: var(--font-roboto);
+  --font-mono: var(--font-roboto-mono);
+
+  --shadow-vignette-hover: 4px 4px 13px 0px rgba(0, 0, 0, 0.25);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
