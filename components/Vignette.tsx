@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 
 interface VignetteProps {
@@ -43,14 +44,14 @@ export default function Vignette({
 
   if (href) {
     const isExternal = href.startsWith("http");
-    return (
-      <a
-        href={href}
-        {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-      >
-        {content}
-      </a>
-    );
+    if (isExternal) {
+      return (
+        <a href={href} target="_blank" rel="noopener noreferrer">
+          {content}
+        </a>
+      );
+    }
+    return <Link href={href}>{content}</Link>;
   }
 
   return content;
