@@ -1,4 +1,4 @@
-import Image from "next/image";
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 const socials = [
   {
@@ -25,11 +25,12 @@ export default function Socials() {
           aria-label={social.name}
           className="flex h-7 w-7 items-center justify-center transition-opacity hover:opacity-70"
         >
-          <Image
-            src={social.icon}
+          <img
+            src={`${basePath}${social.icon}`}
             alt={social.name}
             width={32}
             height={32}
+            className="h-8 w-8"
           />
         </a>
       ))}
