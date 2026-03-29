@@ -1,5 +1,3 @@
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-
 const socials = [
   {
     name: "GitHub",
@@ -26,7 +24,7 @@ export default function Socials() {
           className="flex h-7 w-7 items-center justify-center transition-opacity hover:opacity-70"
         >
           <img
-            src={`${basePath}${social.icon}`}
+            src={social.icon}
             alt={social.name}
             width={32}
             height={32}
