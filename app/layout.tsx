@@ -15,9 +15,8 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Martin Tarot — Portfolio",
-  description:
-    "Portfolio de Martin Tarot — Développeur web et projets informatiques.",
+  title: "Martin Tarot",
+  description: "Bienvenue sur martintarot.com !",
 };
 
 export default function RootLayout({
