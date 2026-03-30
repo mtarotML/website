@@ -13,7 +13,7 @@ const projects = [
     description:
       "Exploration du dataset Fashion MNIST.\n\nstack : Heroku, Scikit-Learn, Numpy, Joblib, HTML/CSS",
     accentColor: "#7AD3D9",
-    href: "/fashionmnist",
+    href: "/fashion-mnist",
   },
 ];
 
