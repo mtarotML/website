@@ -2,6 +2,13 @@ import Vignette from "./Vignette";
 
 const projects = [
   {
+    title: "TRUELINK",
+    description:
+      "MVP Application de rencontre.\n\nstack : Frontend, Backend, PyTorch, Auth, Database, Cursor, vibe-coding.",
+    accentColor: "#E91F87",
+    href: "https://truelink.fit",
+  },
+  {
     title: "CONCOURS DE DESSIN",
     description:
       "Concours de dessin en ligne.\n\nstack : Oracle VM, Git, Docker Compose, Nginx, PostgreSQL, FastAPI.",
